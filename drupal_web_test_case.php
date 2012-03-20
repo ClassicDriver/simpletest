@@ -3423,6 +3423,12 @@ class DrupalWebTestCase extends DrupalTestCase {
 class DrupalCloneTestCase extends DrupalWebTestCase {
 
   /**
+   * Information about existing database tables.
+   */
+  protected $sources = array();
+  protected $schemas = array();
+
+  /**
    * Tables to exlude during data cloning, only their structure will be cloned.
    *
    * @var array
@@ -3442,27 +3448,22 @@ class DrupalCloneTestCase extends DrupalWebTestCase {
     'watchdog',
   );
 
-  protected function setUpInstall() {
-    global $db_prefix;
-
-    // Store new database prefix.
-    $db_prefix_new = $db_prefix;
-    $db_prefix = $this->originalPrefix;
-
+  protected function setUp() {
     // Rebuild schema based on prefixed database and such.
-    $schemas = drupal_get_schema(NULL, TRUE);
+    $this->schemas = drupal_get_schema(NULL, TRUE);
     // Create a list of prefixed source table names.
-    $sources = array();
-    foreach ($schemas as $name => $schema) {
-      $sources[$name] = Database::getConnection()->prefixTables('{' . $name . '}');
+    $this->sources = array();
+    foreach ($this->schemas as $name => $schema) {
+      $this->sources[$name] = Database::getConnection()->prefixTables('{' . $name . '}');
     }
 
-    // Return to new prefix before performing cloning.
-    $db_prefix = $db_prefix_new;
+    parent::setUp();
+  }
 
+  protected function setUpInstall() {
     // Clone each table into the new database.
-    foreach ($schemas as $name => $schema) {
-      $this->cloneTable($name, $sources[$name], $schema);
+    foreach ($this->schemas as $name => $schema) {
+      $this->cloneTable($name, $this->sources[$name], $schema);
     }
   }
 
